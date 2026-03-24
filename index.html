@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stark Industries: টপ সিক্রেট মিশন</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        * { cursor: url('https://cdn.custom-cursor.com/cursors/pack2237/iron_man_arc_reactor_cursor.png'), auto !important; }
+
+        body {
+            margin: 0; padding: 0;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            font-family: 'SolaimanLipi', 'Arial', sans-serif;
+            overflow: hidden; 
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; text-align: center;
+        }
+
+        /* হার্ট পার্টিকেল */
+        .heart-particle {
+            position: absolute; width: 15px; height: 15px; background: rgba(255, 105, 180, 0.7);
+            transform: rotate(45deg); pointer-events: none;
+            animation: move-heart 1.5s linear forwards;
+        }
+        .heart-particle::before, .heart-particle::after {
+            content: ''; position: absolute; width: 100%; height: 100%; background: inherit; border-radius: 50%;
+        }
+        .heart-particle::before { top: -50%; left: 0; }
+        .heart-particle::after { top: 0; left: -50%; }
+
+        @keyframes move-heart {
+            0% { transform: translate(0, 0) rotate(45deg) scale(1); opacity: 1; }
+            100% { transform: translate(var(--x), var(--y)) rotate(45deg) scale(0); opacity: 0; }
+        }
+
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        @keyframes glow { 0% { text-shadow: 0 0 10px #ff99cc; } 50% { text-shadow: 0 0 20px #ff0066; } 100% { text-shadow: 0 0 10px #ff99cc; } }
+        @keyframes arcReactor { 0% { box-shadow: 0 0 10px #00ffff; } 50% { box-shadow: 0 0 30px #00ffff; } 100% { box-shadow: 0 0 10px #00ffff; } }
+
+        .btn-magic {
+            background: linear-gradient(45deg, #e6b800, #ff3300); color: white; border: none;
+            padding: 12px 30px; font-size: 18px; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 8px 15px rgba(255, 51, 0, 0.4); transition: all 0.3s ease;
+            animation: float 3s ease-in-out infinite; font-weight: bold;
+        }
+        .btn-magic:hover { transform: scale(1.1); }
+
+        .screen { display: none; width: 100%; padding: 20px; box-sizing: border-box; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #start-screen { display: block; }
+
+        /* প্র্যাঙ্ক স্ক্রিন */
+        #prank-screen { font-family: monospace; color: #00ffff; font-size: 18px; text-align: left; max-width: 500px; }
+
+        /* গেম স্ক্রিন */
+        #game-area {
+            width: 100%; max-width: 600px; height: 60vh; position: relative;
+            background: rgba(0, 0, 0, 0.3); border-radius: 20px; border: 2px dashed #00ffff; margin: 20px auto;
+        }
+        #catch-item { width: 70px; position: absolute; transition: top 0.4s, left 0.4s; }
+
+        .gif-image { width: 250px; border-radius: 15px; margin: 15px 0; animation: arcReactor 2s infinite; }
+        
+        /* ভিডিও স্টাইল */
+        .birthday-video { width: 100%; max-width: 320px; border-radius: 15px; margin-top: 15px; border: 3px solid #ff69b4; display: none; }
+
+        .box-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+        .magic-box { width: 100px; transition: transform 0.3s; }
+        .magic-box:hover { transform: scale(1.1) rotate(5deg); }
+
+        .poem-text {
+            background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; font-size: 20px; line-height: 1.5;
+            display: none; backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffe6f2; margin-top: 15px; animation: glow 2s infinite;
+        }
+    </style>
+</head>
+<body onclick="createHeart(event)">
+
+    <div id="start-screen" class="screen">
+        <h1 style="color: #00ffff; font-size: 35px;">হ্যালো প্রিয়... 🤖</h1>
+        <p>Stark Industries এর টপ-সিক্রেট সিস্টেমে তোমাকে স্বাগতম। মিশন শুরু করবে?</p>
+        <button class="btn-magic" onclick="startPrank()">J.A.R.V.I.S চালু করো 🚀</button>
+    </div>
+
+    <div id="prank-screen" class="screen">
+        <div id="terminal-text"></div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <h2 style="color: #ff3300;">সারপ্রাইজ আনলক করতে এই উড়ন্ত হার্টটিকে ৫ বার ধরো!</h2>
+        <p>স্কোর: <span id="score" style="color: #00ffff; font-size: 24px; font-weight: bold;">0</span> / 5</p>
+        <div id="game-area">
+            <img id="catch-item" src="https://media.giphy.com/media/l4pTfx2qLszoacZRS/giphy.gif" onclick="catchIt()">
+        </div>
+    </div>
+
+    <div id="ironman-screen" class="screen">
+        <h1 style="color: #ffd700;">মিশন সাকসেসফুল! 🎉</h1>
+        <p>শুনলাম টনি স্টার্কের আর্ক রিয়েক্টরের থেকেও নাকি তোমার হার্ট বেশি স্পেশাল!<br>তাই আয়রন ম্যান নিজেই এসেছে উইশ করতে!</p>
+        <img class="gif-image" src="https://media.giphy.com/media/11sBLVxIRvnAwt/giphy.gif">
+        <p style="font-size: 24px; color: #ff3300; font-weight: bold;">"I Love You 3000" ❤️</p>
+        <button class="btn-magic" onclick="showGifts()">আসল সারপ্রাইজ দেখো 🎁</button>
+    </div>
+
+    <div id="gift-screen" class="screen" style="overflow-y: auto; max-height: 100vh; padding-bottom: 50px;">
+        <h2 style="color: #ff6699;">এবার তোমার জন্য আমার কিছু কথা... ❤️</h2>
+        <p>নিচের ম্যাজিক বক্সগুলো একটা একটা করে খোলো প্রিয়!</p>
+        
+        <div class="box-container">
+            <div>
+                <img id="box1" class="magic-box" src="https://media.giphy.com/media/3o6Zt6ML6DroZXIG5a/giphy.gif" onclick="openBox(1)">
+                <div id="poem1" class="poem-text">
+                    "তুমিই রাত্রি, তুমিই নুপুর, তুমি জোৎস্নার আলো।<br>দিশায় যখন লাগে গ্রহণ, তোমার চিন্তায় দেয় আলো।" 🌙✨
+                    <br><img src="https://media.giphy.com/media/3o7TKoWXm3okO1kgHC/giphy.gif" style="width:80px; margin-top:10px;">
+                </div>
+            </div>
+
+            <div>
+                <img id="box2" class="magic-box" src="https://media.giphy.com/media/3o6Zt6ML6DroZXIG5a/giphy.gif" onclick="openBox(2)">
+                <div id="poem2" class="poem-text">
+                    "পাহাড় তুমি, নদী তুমি, তোমার চিত্রই সম্মান।<br>ভালোবেসে তুমি ছুঁয়ে দিলে পাথরেও প্রায় প্রাণ।" 🏞️💖
+                    <br><img src="https://media.giphy.com/media/l41JWbGl7Ui0ihS4U/giphy.gif" style="width:80px; margin-top:10px;">
+                </div>
+            </div>
+
+            <div>
+                <img id="box3" class="magic-box" src="https://media.giphy.com/media/3o6Zt6ML6DroZXIG5a/giphy.gif" onclick="openBox(3)">
+                <div id="poem3" class="poem-text final-wish">
+                    "আর তোমার জন্মদিনে প্রার্থনা করি সত্য মনে, তুমি যেদিকেই তাকাও ভালোবাসার টানে, সেটা তোমার হোক মনে প্রাণে।"<br><br>
+                    <span style="font-size: 28px; color: #ff0055; font-weight:bold;">শুভ জন্মদিন প্রিয়! 🎂🎉</span>
+                    
+                    <video id="birthdayVideo" class="birthday-video" playsinline loop muted>
+                        <source src="wish.mp4" type="video/mp4">
+                    </video>
+                    <button id="unmuteBtn" class="btn-magic" style="display:none; font-size:14px; padding: 8px 15px; margin-top:10px; border-radius:10px;" onclick="unmuteVideo()">🔊 সাউন্ড অন করো</button>
+                    
+                    <br><span style="font-size: 18px; color: #00ffff; display: block; margin-top: 10px;">- Love you 3000 -</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createHeart(event) {
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('heart-particle');
+                heart.style.left = event.clientX + 'px';
+                heart.style.top = event.clientY + 'px';
+                heart.style.setProperty('--x', (Math.random() * 100 - 50) + 'px');
+                heart.style.setProperty('--y', (Math.random() * 100 - 50) + 'px');
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), 1000);
+            }
+        }
+
+        // প্র্যাঙ্ক টেক্সট (ছোট করা হয়েছে)
+        const messages = [
+            "J.A.R.V.I.S online...",
+            "Scanning network for Birthday Target...",
+            "Danger: Extreme Cuteness Detected! 🚨",
+            "Bypassing Security... Mission Deployed!"
+        ];
+
+        function startPrank() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('prank-screen').style.display = 'block';
+            let terminal = document.getElementById('terminal-text');
+            let delay = 0;
+
+            messages.forEach((msg) => {
+                setTimeout(() => { terminal.innerHTML += `<p>> ${msg}</p>`; }, delay);
+                delay += 600; // খুব দ্রুত লেখা উঠবে
+            });
+
+            setTimeout(() => {
+                document.getElementById('prank-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'block';
+                moveItem();
+            }, delay + 500);
+        }
+
+        let score = 0;
+        const item = document.getElementById('catch-item');
+
+        function moveItem() {
+            const area = document.getElementById('game-area');
+            item.style.left = Math.floor(Math.random() * (area.clientWidth - 70)) + 'px';
+            item.style.top = Math.floor(Math.random() * (area.clientHeight - 70)) + 'px';
+        }
+
+        // গেম সহজ করা হয়েছে (১.২ সেকেন্ড পর পর নড়বে)
+        let gameInterval = setInterval(() => {
+            if(document.getElementById('game-screen').style.display === 'block') moveItem();
+        }, 1200); 
+
+        function catchIt() {
+            score++;
+            document.getElementById('score').innerText = score;
+            if(score >= 5) {
+                document.getElementById('game-screen').style.display = 'none';
+                document.getElementById('ironman-screen').style.display = 'block';
+                clearInterval(gameInterval);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                moveItem();
+            }
+        }
+
+        function showGifts() {
+            document.getElementById('ironman-screen').style.display = 'none';
+            document.getElementById('gift-screen').style.display = 'block';
+            document.body.style.overflow = 'auto'; // স্ক্রল চালু করে দিলাম
+        }
+
+        let currentBox = 1;
+        function openBox(num) {
+            if(num !== currentBox) {
+                alert("উঁহু! চালাকি চলবে না। জার্ভিস বলছে সিরিয়ালি বক্সগুলো খুলতে! 😉"); return;
+            }
+
+            document.getElementById('box' + num).src = "https://media.giphy.com/media/l0ExncehJzexFpPlO/giphy.gif"; 
+            
+            setTimeout(() => {
+                document.getElementById('box' + num).style.display = 'none';
+                document.getElementById('poem' + num).style.display = 'block';
+                
+                if(num === 3) {
+                    const video = document.getElementById('birthdayVideo');
+                    const unmuteBtn = document.getElementById('unmuteBtn');
+                    video.style.display = 'inline-block';
+                    
+                    // ভিডিও প্লে করা
+                    video.play().catch(() => { console.log("Auto-play blocked, playing muted."); });
+                    unmuteBtn.style.display = 'inline-block'; // সাউন্ড বাটন দেখাও
+
+                    confetti({ particleCount: 150, spread: 100, origin: { y: 0.3 } });
+                }
+                currentBox++;
+            }, 1000); // বক্স খোলার সময়টাও কমিয়ে ১ সেকেন্ড করা হলো
+        }
+
+        // ভিডিও সাউন্ড অন করার ফাংশন
+        function unmuteVideo() {
+            const video = document.getElementById('birthdayVideo');
+            video.muted = false;
+            document.getElementById('unmuteBtn').innerText = "🔊 সাউন্ড অন হয়েছে!";
+            document.getElementById('unmuteBtn').style.background = "#2ecc71"; // কালার চেঞ্জ
+        }
+    </script>
+</body>
+</html>
